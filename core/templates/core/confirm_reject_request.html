@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Reject Join Request — {{ team.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Reject Join Request</h1>
+    <a href="{% url 'sa_join_requests' team.id %}" class="btn btn-ghost">← Back</a>
+</div>
+
+<div class="card">
+    <p>Are you sure you want to <strong>reject</strong> {{ request.user.username }}'s request to join <strong>{{ team.name }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Reject</button>
+        <a href="{% url 'sa_join_requests' team.id %}" class="btn btn-ghost">Cancel</a>
+    </form>
+</div>
+{% endblock %}  

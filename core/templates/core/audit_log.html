@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Audit Log {% if is_superadmin %}<span class="badge badge-superadmin">Global</span>{% endif %}</h1>
+</div>
+
+{% if logs %}
+<div class="card" style="padding:0;">
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Secret</th>
+                <th>When</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><strong>{{ log.user.username }}</strong></td>
+                <td>
+                    <span class="badge
+                        {% if log.action == 'created' %}badge-approved
+                        {% elif log.action == 'deleted' %}badge-rejected
+                        {% elif log.action == 'edited' %}badge-admin
+                        {% else %}badge-viewer{% endif %}">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td>
+                    {{ log.secret_name }}
+                    {% if not log.secret %}<span style="color:#aaa;font-size:12px;">(deleted)</span>{% endif %}
+                </td>
+                <td style="color:#888;font-size:13px;">{{ log.timestamp|date:"d M Y, H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card empty">No activity recorded yet.</div>
+{% endif %}
+
+{% endblock %}

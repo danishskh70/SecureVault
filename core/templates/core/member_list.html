@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Team Members{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+    <h1>{{ team.name }} — Members</h1>
+    <div style="display:flex;gap:8px;">
+        <a href="{% url 'project_list' %}" class="btn btn-ghost">← Projects</a>
+        <a href="{% url 'join_requests' %}" class="btn btn-ghost">Join Requests</a>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:1rem;background:#f9f9f9;">
+    <p style="font-size:13px;color:#888;">
+        Team Join Key — share this with people you want to invite:
+    </p>
+    <code style="font-size:15px;font-weight:600;color:#1a1a1a;">{{ join_key }}</code>
+</div>
+
+<div class="card" style="padding:0;">
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in members %}
+            <tr>
+                <td><strong>{{ m.user.username }}</strong></td>
+                <td><span class="badge badge-{{ m.role }}">{{ m.role }}</span></td>
+                <td style="color:#888;font-size:13px;">{{ m.joined_at|date:"d M Y" }}</td>
+                <td>
+                    {% if m.user != request.user %}
+                    <div class="actions">
+                        <a href="{% url 'change_role' m.id %}" class="btn btn-ghost">Change Role</a>
+                        <a href="{% url 'remove_member' m.id %}" class="btn btn-danger">Remove</a>
+                    </div>
+                    {% else %}
+                        <span style="color:#aaa;font-size:13px;">You</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

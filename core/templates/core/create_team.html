@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Get Started — SecureVault{% endblock %}
+{% block content %}
+
+<div style="max-width: 480px; margin: 5rem auto;">
+
+    <div style="text-align:center; margin-bottom: 2rem;">
+        <h1 style="margin-bottom: 6px;">Welcome to SecureVault</h1>
+        <p style="font-size:13px; color:var(--text-3);">
+            You're not part of a team yet. Choose how to get started.
+        </p>
+    </div>
+
+    <!-- Option A: Create a team -->
+    <div class="card" style="margin-bottom: .5rem; padding: 1.5rem;">
+        <div style="display:flex; gap: 1rem; align-items: flex-start;">
+            <div style="width:36px; height:36px; border-radius:8px; background:var(--text); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.8">
+                    <path d="M8 3v10M3 8h10"/>
+                </svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:14px; font-weight:600; margin-bottom:4px;">Create a new team</div>
+                <p style="font-size:12px; color:var(--text-3); margin-bottom:1rem; line-height:1.5;">
+                    Start fresh. You'll be the owner and can invite others using a join key.
+                </p>
+                <form method="post" action="{% url 'create_team' %}">
+                    {% csrf_token %}
+                    <div class="form-group" style="margin-bottom:.75rem;">
+                        <label>Team name</label>
+                        <input type="text" name="name" required placeholder="e.g. Backend Team"
+                               style="font-size:13px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+                        Create Team
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="display:flex; align-items:center; gap:.75rem; margin: 1rem 0;">
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+        <span style="font-size:12px; color:var(--text-3);">or</span>
+        <div style="flex:1; height:1px; background:var(--border);"></div>
+    </div>
+
+    <!-- Option B: Join existing team -->
+    <div class="card" style="padding: 1.5rem;">
+        <div style="display:flex; gap: 1rem; align-items: flex-start;">
+            <div style="width:36px; height:36px; border-radius:8px; background:var(--bg); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-2)" stroke-width="1.6">
+                    <circle cx="6" cy="5" r="3"/>
+                    <path d="M1 14c0-3 2.5-5 5-5"/>
+                    <path d="M12 9v6m-3-3h6"/>
+                </svg>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:14px; font-weight:600; margin-bottom:4px;">Join an existing team</div>
+                <p style="font-size:12px; color:var(--text-3); margin-bottom:1rem; line-height:1.5;">
+                    Got a join key from your admin? Enter it below to request access.
+                </p>
+                <form method="post" action="{% url 'create_team' %}">
+                    {% csrf_token %}    
+                    {% if error %}
+                        <div class="alert alert-error" style="margin-bottom:.75rem;">{{ error }}</div>
+                    {% endif %}
+                    <div class="form-group" style="margin-bottom:.75rem;">
+                        <label>Team join key</label>
+                        <input type="text" name="join_key" required placeholder="e.g. team-a3f9c1b2"
+                               style="font-size:13px; font-family:monospace;">
+                    </div>
+                    <button type="submit" class="btn btn-ghost" style="width:100%; justify-content:center;">
+                        Send Join Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

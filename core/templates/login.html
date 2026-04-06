@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Login — SecretManager{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:4rem auto;">
+    <div class="card">
+        <h1 style="margin-bottom:.5rem;">Welcome back</h1>
+        <p style="color:#888;font-size:13px;margin-bottom:1.5rem;">Log in to SecretManager</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p style="color:#dc2626;font-size:12px;margin-top:4px;">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors.0 }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;">
+                Log In
+            </button>
+        </form>
+
+        <p style="text-align:center;margin-top:1rem;font-size:13px;color:#888;">
+            No account? <a href="{% url 'signup' %}">Sign up</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

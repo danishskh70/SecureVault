@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Delete Secret{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto;">
+    <div class="card" style="text-align:center;padding:2.5rem;">
+        <div style="font-size:40px;margin-bottom:1rem;">🗑️</div>
+        <h1>Delete Secret?</h1>
+        <p style="color:#888;margin-top:.5rem;font-size:14px;">
+            You are about to delete <strong>{{ secret.name }}</strong> from
+            <strong>{{ project.name }}</strong>. This cannot be undone.
+        </p>
+        <div class="actions" style="justify-content:center;margin-top:1.5rem;">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            </form>
+            <a href="{% url 'secret_list' project.id %}" class="btn btn-ghost">Cancel</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

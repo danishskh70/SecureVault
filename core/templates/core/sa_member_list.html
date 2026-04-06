@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ team.name }} – Members{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+    <h1>{{ team.name }} <span class="badge badge-superadmin">Members</span></h1>
+    <div style="display:flex;gap:8px;">
+        {% if pending_count %}
+        <a href="{% url 'sa_join_requests' team.id %}" class="btn">
+            Join Requests <span class="badge">{{ pending_count }}</span>
+        </a>
+        {% endif %}
+        <a href="{% url 'sa_project_list' team.id %}" class="btn">← Projects</a>
+    </div>
+</div>
+
+{% for m in members %}
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+            <strong>{{ m.user.username }}</strong>
+            <span class="badge badge-{{ m.role }}" style="margin-left:8px;">{{ m.role }}</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+            <a href="{% url 'sa_change_role' team.id m.id %}" class="btn btn-sm">Change Role</a>
+            <a href="{% url 'sa_remove_member' team.id m.id %}" class="btn btn-sm btn-danger">Remove</a>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="card empty">No members yet.</div>
+{% endfor %}
+{% endblock %}

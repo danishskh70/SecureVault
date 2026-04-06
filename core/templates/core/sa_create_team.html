@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Create Team — Superadmin{% endblock %}
+{% block nav_sa_dash %}active{% endblock %}
+
+{% block content %}
+<div style="max-width: 480px; margin: 3rem auto;">
+
+    <div class="page-header" style="margin-bottom:1.5rem;">
+        <div class="page-header-left">
+            <h1 class="page-title">Create Team</h1>
+            <p class="page-subtitle">New team will appear in the superadmin dashboard.</p>
+        </div>
+        <a href="{% url 'superadmin_dashboard' %}" class="btn btn-ghost">← Back</a>
+    </div>
+
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Team name</label>
+                {{ form.name }}
+            </div>
+            <div style="display:flex; gap:.5rem; justify-content:flex-end;">
+                <a href="{% url 'superadmin_dashboard' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Team</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

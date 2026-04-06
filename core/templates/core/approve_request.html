@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Approve Request{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto;">
+    <div class="card">
+        <h1>Approve Request</h1>
+        <p style="color:#888;font-size:14px;margin-top:.5rem;margin-bottom:1.5rem;">
+            Approving <strong>{{ join_request.user.username }}</strong> into
+            <strong>{{ join_request.team.name }}</strong>. Assign their role:
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                </div>
+            {% endfor %}
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Approve & Add</button>
+                <a href="{% url 'join_requests' %}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

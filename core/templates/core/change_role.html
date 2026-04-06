@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Change Role{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto;">
+    <div class="card">
+        <h1>Change Role</h1>
+        <p style="color:#888;font-size:14px;margin-top:.5rem;margin-bottom:1.5rem;">
+            Updating role for <strong>{{ target.user.username }}</strong>.
+            Current role: <span class="badge badge-{{ target.role }}">{{ target.role }}</span>
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>New Role</label>
+                <select name="role">
+                    {% for value, label in role_choices %}
+                        <option value="{{ value }}" {% if target.role == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a href="{% url 'member_list' %}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

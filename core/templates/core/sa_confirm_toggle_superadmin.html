@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}
+    {% if profile.role == 'superadmin' %}Revoke Superadmin{% else %}Grant Superadmin{% endif %}
+{% endblock %}
+{% block content %}
+
+<div class="card" style="max-width:480px;margin:2rem auto;">
+    {% if profile.role == 'superadmin' %}
+        <h2 style="margin-bottom:1rem;">Revoke Superadmin</h2>
+        <p>Remove superadmin privileges from <strong>{{ target_user.username }}</strong>?
+        They will become a regular user and lose all global access.</p>
+    {% else %}
+        <h2 style="margin-bottom:1rem;">Grant Superadmin</h2>
+        <p>Grant superadmin privileges to <strong>{{ target_user.username }}</strong>?
+        They will gain full global access to all teams, projects, and secrets.</p>
+    {% endif %}
+
+    <form method="post" style="display:flex;gap:8px;margin-top:1.25rem;">
+        {% csrf_token %}
+        {% if profile.role == 'superadmin' %}
+            <button type="submit" class="btn btn-danger">Yes, Revoke</button>
+        {% else %}
+            <button type="submit" class="btn btn-primary">Yes, Grant</button>
+        {% endif %}
+        <a href="{% url 'sa_user_list' %}" class="btn">Cancel</a>
+    </form>
+</div>
+
+{% endblock %}

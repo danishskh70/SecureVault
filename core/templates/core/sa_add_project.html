@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}{% if editing %}Edit{% else %}New{% endif %} Project — Superadmin{% endblock %}
+{% block nav_sa_dash %}active{% endblock %}
+
+{% block content %}
+<div style="max-width:540px;margin:0 auto;">
+    <div class="page-header">
+        <h1>{% if editing %}Edit Project{% else %}New Project{% endif %}</h1>
+        <a href="{% url 'sa_project_list' team.id %}" class="btn btn-ghost">← Back</a>
+    </div>
+
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" name="name" required placeholder="e.g. Backend API"
+                       value="{{ form.name.value|default:'' }}">
+            </div>
+            <div class="form-group">
+                <label>Description <span style="color:#aaa;">(optional)</span></label>
+                <textarea name="description" rows="3"
+                          placeholder="What is this project about?">{{ form.description.value|default:'' }}</textarea>
+            </div>
+
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-error">{{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">
+                    {% if editing %}Save Changes{% else %}Create Project{% endif %}
+                </button>
+                <a href="{% url 'sa_project_list' team.id %}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

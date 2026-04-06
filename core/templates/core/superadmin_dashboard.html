@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Superadmin — SecureVault{% endblock %}
+{% block nav_sa_dash %}active{% endblock %}
+ 
+{% block content %}
+ 
+<div class="page-header">
+    <div class="page-header-left">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <h1 class="page-title">Overview</h1>
+            <span class="badge badge-superadmin">Superadmin</span>
+        </div>
+        <p class="page-subtitle">Global view across all teams and projects</p>
+    </div>
+    <div class="actions">
+        <a href="{% url 'audit_log' %}" class="btn btn-ghost">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h10v10H3zM6 6h4M6 9h4"/></svg>
+            Audit Log
+        </a>
+        <a href="{% url 'sa_create_team' %}" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+            New Team
+        </a>
+    </div>
+</div>
+ 
+<!-- Stat cards -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:2rem;">
+ 
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-value">{{ teams.count }}</div>
+        <div class="stat-label">Teams</div>
+    </div>
+ 
+    <a href="{% url 'sa_user_list' %}" class="stat-card">
+        <div class="stat-value">{{ users.count }}</div>
+        <div class="stat-label">Users</div>
+        <div class="stat-link-hint">View all →</div>
+    </a>
+ 
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-value">{{ projects.count }}</div>
+        <div class="stat-label">Projects</div>
+    </div>
+ 
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-value">{{ secrets.count }}</div>
+        <div class="stat-label">Secrets</div>
+    </div>
+ 
+</div>
+ 
+<!-- Teams section -->
+<div class="section-header">
+    <span class="section-title">All Teams</span>
+    <a href="{% url 'sa_create_team' %}" class="btn btn-ghost btn-sm">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+        New Team
+    </a>
+</div>
+ 
+{% for team in teams %}
+<div class="card" style="margin-bottom:.5rem;padding:1rem 1.25rem;">
+ 
+    <!-- Team name + meta -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem;">
+        <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:14px;font-weight:600;">{{ team.name }}</span>
+                <code style="font-size:11px;color:var(--text-3);background:var(--bg);border:1px solid var(--border);padding:1px 6px;border-radius:4px;">{{ team.join_key }}</code>
+            </div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:4px;">
+                {{ team.project_set.count }} project{{ team.project_set.count|pluralize }}
+                &middot;
+                {{ team.membership_set.count }} member{{ team.membership_set.count|pluralize }}
+                {% with pending=team.teamjoinrequest_set.all %}
+                    {% if pending.count %}
+                        &middot; <span style="color:#d97706;font-weight:500;">{{ pending.count }} pending request{{ pending.count|pluralize }}</span>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+ 
+        <!-- Danger action isolated right -->
+        <a href="{% url 'sa_delete_team' team.id %}"
+           class="btn btn-sm"
+           style="color:var(--danger);border:1px solid var(--border);background:transparent;font-size:12px;"
+           onclick="return confirm('Delete team \'{{ team.name }}\'? This cannot be undone.')">
+            Delete
+        </a>
+    </div>
+ 
+    <!-- Member badges — capped with overflow indicator -->
+    {% with members=team.membership_set.all %}
+    {% if members %}
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.75rem;">
+            {% for m in members|slice:":8" %}
+                <span class="badge badge-{{ m.role }}" style="font-size:11px;">
+                    {{ m.user.username }}
+                </span>
+            {% endfor %}
+            {% if members.count > 8 %}
+                <span class="badge" style="font-size:11px;">+{{ members.count|add:"-8" }} more</span>
+            {% endif %}
+        </div>
+    {% else %}
+        <p style="font-size:12px;color:var(--text-3);margin-bottom:.75rem;">No members yet</p>
+    {% endif %}
+    {% endwith %}
+ 
+    <!-- Action buttons -->
+    <div style="display:flex;gap:6px;padding-top:.75rem;border-top:1px solid var(--border);">
+        <a href="{% url 'sa_project_list' team.id %}" class="btn btn-sm btn-ghost">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3h5l2 2h5v9H2z"/></svg>
+            Projects
+        </a>
+        <a href="{% url 'sa_member_list' team.id %}" class="btn btn-sm btn-ghost">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><path d="M1 13c0-2.5 1.8-4 4-4"/><circle cx="11" cy="5" r="2.5"/><path d="M8 13c0-2.5 1.8-4 4-4"/></svg>
+            Members
+        </a>
+        <a href="{% url 'sa_add_project' team.id %}" class="btn btn-sm btn-ghost">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
+            Add Project
+        </a>
+        {% with pending_count=team.teamjoinrequest_set.count %}
+        {% if pending_count %}
+            <a href="{% url 'sa_join_requests' team.id %}" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">
+                {{ pending_count }} Request{{ pending_count|pluralize }}
+            </a>
+        {% endif %}
+        {% endwith %}
+    </div>
+ 
+</div>
+{% empty %}
+<div class="card">
+    <div class="empty">
+        <h3>No teams yet</h3>
+        <p style="margin-top:4px;">Create a team to get started.</p>
+        <a href="{% url 'sa_create_team' %}" class="btn btn-primary" style="margin-top:1.25rem;">Create First Team</a>
+    </div>
+</div>
+{% endfor %}
+ 
+{% endblock %}

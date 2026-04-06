@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Request Pending — SecureVault{% endblock %}
+{% block content %}
+
+<div style="max-width: 440px; margin: 5rem auto; text-align:center;">
+
+    {% if join_request %}
+
+        {% if join_request.status == 'pending' %}
+            <div style="width:48px; height:48px; border-radius:12px; background:var(--warning-bg); border:1px solid #fde68a; display:flex; align-items:center; justify-content:center; margin: 0 auto 1.25rem;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+            </div>
+            <h1 style="margin-bottom:8px;">Request pending</h1>
+            <p style="font-size:13px; color:var(--text-2); line-height:1.6;">
+                Your request to join <strong>{{ join_request.team.name }}</strong> is waiting for admin approval.
+                You'll need to check back — there's no email notification yet.
+            </p>
+            <div style="margin-top:1.5rem; display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap;">
+                <a href="{% url 'pending' %}" class="btn btn-ghost">Refresh status</a>
+                <a href="{% url 'join_team' %}" class="btn btn-ghost">Try a different key</a>
+            </div>
+
+        {% elif join_request.status == 'rejected' %}
+            <div style="width:48px; height:48px; border-radius:12px; background:var(--danger-bg); border:1px solid #fecaca; display:flex; align-items:center; justify-content:center; margin: 0 auto 1.25rem;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M15 9l-6 6M9 9l6 6"/>
+                </svg>
+            </div>
+            <h1 style="margin-bottom:8px;">Request declined</h1>
+            <p style="font-size:13px; color:var(--text-2); line-height:1.6;">
+                Your request to join <strong>{{ join_request.team.name }}</strong> was not approved.
+                Contact the team admin directly, or try a different join key.
+            </p>
+            <div style="margin-top:1.5rem; display:flex; gap:.5rem; justify-content:center;">
+                <a href="{% url 'join_team' %}" class="btn btn-primary">Try another key</a>
+                <a href="{% url 'create_team' %}" class="btn btn-ghost">Create a team instead</a>
+            </div>
+
+        {% endif %}
+
+    {% else %}
+        <!-- No join request found — shouldn't normally reach here -->
+        <h1 style="margin-bottom:8px;">No active request</h1>
+        <p style="font-size:13px; color:var(--text-2);">
+            You don't have a pending join request.
+        </p>
+        <div style="margin-top:1.5rem; display:flex; gap:.5rem; justify-content:center;">
+            <a href="{% url 'create_team' %}" class="btn btn-primary">Get started</a>
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

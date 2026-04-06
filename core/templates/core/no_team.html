@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}No Team{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:4rem auto;">
+    <div class="card" style="text-align:center;padding:3rem;">
+        <div style="font-size:48px;margin-bottom:1rem;">🔐</div>
+        <h1>You're not on a team</h1>
+        <p style="color:#888;margin-top:.5rem;font-size:14px;">
+            Create a new team or join an existing one to get started.
+        </p>
+        <div class="actions" style="justify-content:center;margin-top:2rem;">
+            <a href="{% url 'create_team' %}" class="btn btn-primary">Create a Team</a>
+            <a href="{% url 'join_team' %}" class="btn btn-ghost">Join a Team</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Delete User{% endblock %}
+{% block content %}
+
+<div class="card" style="max-width:480px;margin:2rem auto;">
+    <h2 style="margin-bottom:1rem;">Delete User</h2>
+
+    <p>You are about to permanently delete
+        <strong>{{ target_user.username }}</strong>
+        <code style="font-size:11px;color:#888;">{{ target_user.email }}</code>.
+    </p>
+
+    {% if memberships %}
+    <p style="color:#f0a500;font-size:13px;margin-top:.75rem;">
+        ⚠️ This user is a member of the following teams and will be removed:
+    </p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:.5rem 0 1rem;">
+        {% for m in memberships %}
+            <span class="badge badge-{{ m.role }}">
+                {{ m.team.name }} ({{ m.role }})
+            </span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <p style="color:#e06c75;font-size:13px;">This action cannot be undone.</p>
+
+    <form method="post" style="display:flex;gap:8px;margin-top:1.25rem;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete User</button>
+        <a href="{% url 'sa_user_list' %}" class="btn">Cancel</a>
+    </form>
+</div>
+
+{% endblock %}

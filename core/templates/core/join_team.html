@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Join Team{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:4rem auto;">
+    <div class="card">
+        <h1>Join a Team</h1>
+        <p style="color:#888;font-size:13px;margin-bottom:1.5rem;">
+            Enter the join key shared by your team admin.
+        </p>
+
+        {% if error %}
+            <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Team Join Key</label>
+                <input type="text" name="join_key" required placeholder="e.g. team-a3f9c1b2">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;">
+                Send Join Request
+            </button>
+        </form>
+
+        <div style="margin-top:1rem;">
+            <a href="{% url 'create_team' %}" class="btn btn-ghost" style="width:100%;text-align:center;display:block;">
+                ← Create a team instead
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

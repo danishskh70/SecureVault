@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:2rem auto;">
+    <h2>Delete Team</h2>
+    <p>Are you sure you want to delete <strong>{{ team.name }}</strong>?
+    This will also delete all its projects and secrets.</p>
+    <form method="post" style="display:flex;gap:8px;margin-top:1rem;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'superadmin_dashboard' %}" class="btn">Cancel</a>
+    </form>
+</div>
+{% endblock %}
