@@ -1,7 +1,21 @@
-# .gitignore
-myenv/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+myenv/
+
+# Django
 db.sqlite3
-.env
 *.sqlite3
+.env
+local_settings.py
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
