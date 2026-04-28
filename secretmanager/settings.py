@@ -1,8 +1,23 @@
 from pathlib import Path
 
+import os
+from pathlib import Path
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Manual .env loading
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            if '=' in line:
+                key, value = line.strip().split('=', 1)
+                os.environ[key] = value
+
 SECRET_KEY = 'django-insecure-y*hlfnycq0*27jicv6l=@k2*=0+(o4p+v=h_u$8#zitu3bfo3='
+
+# Key used for envelope encryption of team secrets
+VAULT_MASTER_KEY = os.environ.get('VAULT_MASTER_KEY', 'dev-fallback-only-change-in-production-1234567890123456')
 
 DEBUG = True
 

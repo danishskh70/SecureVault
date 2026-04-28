@@ -40,6 +40,7 @@ urlpatterns = [
     path('team/requests/', views.join_requests, name='join_requests'),
     path('team/requests/<int:request_id>/approve/', views.approve_request, name='approve_request'),
     path('team/requests/<int:request_id>/reject/', views.reject_request, name='reject_request'),
+    path('team/requests/<int:request_id>/cancel/', views.cancel_request, name='cancel_request'),
 
     # Projects
     path('projects/', views.project_list, name='project_list'),
@@ -55,6 +56,9 @@ urlpatterns = [
 
     # Audit log
     path('audit/', views.audit_log, name='audit_log'),
+
+    # Team switching
+    path('team/switch/<int:team_id>/', views.switch_team, name='switch_team'),
 
     # Superadmin
     path('superadmin/', views.superadmin_dashboard, name='superadmin_dashboard'),

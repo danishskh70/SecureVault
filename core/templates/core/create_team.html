@@ -1,16 +1,24 @@
 {% extends 'base.html' %}
-{% block title %}Get Started — SecureVault{% endblock %}
+{% block title %}{% if has_teams %}Join Another Team{% else %}Get Started{% endif %} — SecureVault{% endblock %}
 {% block content %}
 
 <div style="max-width: 480px; margin: 5rem auto;">
 
     <div style="text-align:center; margin-bottom: 2rem;">
+        {% if has_teams %}
+        <h1 style="margin-bottom: 6px;">Join Another Team</h1>
+        <p style="font-size:13px; color:var(--text-3);">
+            Enter a join key to request access to another team.
+        </p>
+        {% else %}
         <h1 style="margin-bottom: 6px;">Welcome to SecureVault</h1>
         <p style="font-size:13px; color:var(--text-3);">
             You're not part of a team yet. Choose how to get started.
         </p>
+        {% endif %}
     </div>
 
+    {% if not has_teams %}
     <!-- Option A: Create a team -->
     <div class="card" style="margin-bottom: .5rem; padding: 1.5rem;">
         <div style="display:flex; gap: 1rem; align-items: flex-start;">
@@ -28,8 +36,7 @@
                     {% csrf_token %}
                     <div class="form-group" style="margin-bottom:.75rem;">
                         <label>Team name</label>
-                        <input type="text" name="name" required placeholder="e.g. Backend Team"
-                               style="font-size:13px;">
+                        <input type="text" name="name" required placeholder="e.g. Backend Team" style="font-size:13px;">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
                         Create Team
@@ -45,6 +52,7 @@
         <span style="font-size:12px; color:var(--text-3);">or</span>
         <div style="flex:1; height:1px; background:var(--border);"></div>
     </div>
+    {% endif %}
 
     <!-- Option B: Join existing team -->
     <div class="card" style="padding: 1.5rem;">
@@ -57,14 +65,16 @@
                 </svg>
             </div>
             <div style="flex:1;">
-                <div style="font-size:14px; font-weight:600; margin-bottom:4px;">Join an existing team</div>
+                <div style="font-size:14px; font-weight:600; margin-bottom:4px;">
+                    {% if has_teams %}Join another team{% else %}Join an existing team{% endif %}
+                </div>
                 <p style="font-size:12px; color:var(--text-3); margin-bottom:1rem; line-height:1.5;">
                     Got a join key from your admin? Enter it below to request access.
                 </p>
                 <form method="post" action="{% url 'create_team' %}">
-                    {% csrf_token %}    
+                    {% csrf_token %}
                     {% if error %}
-                        <div class="alert alert-error" style="margin-bottom:.75rem;">{{ error }}</div>
+                    <div class="alert alert-error" style="margin-bottom:.75rem;">{{ error }}</div>
                     {% endif %}
                     <div class="form-group" style="margin-bottom:.75rem;">
                         <label>Team join key</label>
@@ -78,6 +88,12 @@
             </div>
         </div>
     </div>
+
+    {% if has_teams %}
+    <div style="text-align:center; margin-top:1.5rem;">
+        <a href="{% url 'project_list' %}" style="font-size:13px; color:var(--text-3);">← Back to Projects</a>
+    </div>
+    {% endif %}
 
 </div>
 

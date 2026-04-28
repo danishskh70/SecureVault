@@ -3,11 +3,12 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.contrib import messages
 
 from .models import (
     UserProfile, Team, Project, Secret,
     Membership, TeamJoinRequest, AuditLog,
-    ROLE_HIERARCHY, ROLE_CHOICES
+    SecretVersion, ROLE_HIERARCHY, ROLE_CHOICES
 )
 from .forms import (
     SignupForm, CreateTeamForm, JoinTeamForm,
@@ -24,7 +25,13 @@ def is_superadmin(user):
     p = get_profile(user)
     return p and p.role == 'superadmin'
 
-def get_membership(user):
+def get_membership(user, team_id=None):
+    if not team_id:
+        profile = UserProfile.objects.filter(user=user).first()
+        if profile and profile.active_team_id:
+            team_id = profile.active_team_id
+    if team_id:
+        return Membership.objects.filter(user=user, team_id=team_id).select_related('team').first()
     return Membership.objects.filter(user=user).select_related('team').first()
 
 def has_role(membership, required_role):
@@ -99,9 +106,6 @@ def create_team(request):
     """Combined onboarding screen — handles both create-team and join-team POSTs."""
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
-    membership = get_membership(request.user)
-    if membership:
-        return redirect('project_list')
 
     error = None
 
@@ -136,9 +140,11 @@ def create_team(request):
                 except Team.DoesNotExist:
                     error = 'Invalid join key. Please check and try again.'
 
+    all_memberships = Membership.objects.filter(user=request.user)
     return render(request, 'core/create_team.html', {
         'form': CreateTeamForm(),
         'error': error,
+        'has_teams': all_memberships.exists(),
     })
 
 
@@ -306,6 +312,14 @@ def reject_request(request, request_id):
     return render(request, 'core/confirm_reject.html', {
         'join_request': join_request,
     })
+
+@login_required
+def cancel_request(request, request_id):
+    join_request = get_object_or_404(TeamJoinRequest, id=request_id, user=request.user, status='pending')
+    if request.method == 'POST':
+        join_request.delete()
+        return redirect('create_team')
+    return redirect('pending')
 
 # ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -477,6 +491,15 @@ def edit_secret(request, project_id, secret_id):
         form = SecretForm(request.POST, instance=secret)
         if form.is_valid():
             updated = form.save(commit=False)
+            # save old value as version before overwriting
+            last_version = updated.versions.count()
+            SecretVersion.objects.create(
+                secret=updated,
+                encrypted_value=updated.value,
+                changed_by=request.user,
+                version_number=last_version + 1,
+                action='edited'
+            )
             updated.set_value(form.cleaned_data['value'])
             updated.save()
             AuditLog.objects.create(
@@ -695,27 +718,24 @@ def sa_approve_request(request, team_id, request_id):
     join_request = get_object_or_404(
         TeamJoinRequest, id=request_id, team=team, status='pending'
     )
-    if request.method == 'POST':
-        form = ApproveRequestForm(request.POST)
-        if form.is_valid():
-            Membership.objects.create(
-                user=join_request.user,
-                team=join_request.team,
-                role=form.cleaned_data['role']
-            )
-            join_request.status = 'approved'
-            join_request.save()
-            return redirect('sa_join_requests', team_id=team.id)
-    else:
-        form = ApproveRequestForm()
-    return render(request, 'core/approve_request.html', {'membership': None,
 
+    if request.method == 'POST':
+        # Assign default role (e.g., 'viewer') for superadmin approval
+        Membership.objects.create(
+            user=join_request.user,
+            team=join_request.team,
+            role='viewer'
+        )
+        join_request.status = 'approved'
+        join_request.save()
+        return redirect('sa_join_requests', team_id=team.id)
+
+    return render(request, 'core/approve_request.html', {
+        # 'membership': None,
         'join_request': join_request,
-        'form': form,
         'superadmin': True,
         'team': team,
     })
-
 
 @login_required
 def sa_reject_request(request, team_id, request_id):
@@ -797,15 +817,11 @@ def sa_add_project(request, team_id):
 def sa_user_list(request):
     if not is_superadmin(request.user):
         return redirect('project_list')
-    users = User.objects.select_related('userprofile').prefetch_related(
-        'membership_set__team'
-    ).order_by('username')
+    users = User.objects.all().select_related('userprofile').prefetch_related('membership_set__team')
     return render(request, 'core/sa_user_list.html', {
-    'users': users,
-    'membership': None,
-    
-})
-
+        'users': users,
+        'membership': None,
+    })
 
 @login_required
 def sa_toggle_superadmin(request, user_id):
@@ -844,3 +860,12 @@ def sa_delete_user(request, user_id):
         'target_user': target_user,
         'memberships': memberships,
     })
+
+@login_required
+def switch_team(request, team_id):
+    membership = get_object_or_404(Membership, user=request.user, team_id=team_id)
+    profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={'role': 'user'})
+    profile.active_team = membership.team
+    profile.save()
+    messages.success(request, f"Switched to team: {membership.team.name}")
+    return redirect('project_list')

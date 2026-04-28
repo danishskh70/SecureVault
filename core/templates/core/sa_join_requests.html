@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Team Join Requests{% endblock %}
+{% block content %}
+<h1>Join Requests — {{ team.name }}</h1>
+<table>
+    <tr>
+        <th>User</th>
+        <th>Requested At</th>
+        <th>Actions</th>
+    </tr>
+    {% for join_request in requests %}
+    <tr>
+        <td>{{ join_request.user.username }}</td>
+        <td>{{ join_request.requested_at }}</td>
+        <td>
+            <form method="post" action="{% url 'sa_approve_request' team.id join_request.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+            </form>
+            <form method="post" action="{% url 'sa_reject_request' team.id join_request.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+            </form>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">No pending requests.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,32 +1,49 @@
 {% extends 'base.html' %}
-{% block title %}{% if editing %}Edit{% else %}Add{% endif %} Project — {{ team.name }}{% endblock %}
-
+{% block title %}Superadmin — Users{% endblock %}
 {% block content %}
-<div style="max-width:540px;margin:0 auto;">
-    <div class="page-header">
-        <h1>{% if editing %}Edit Project{% else %}Add Project{% endif %}</h1>
-        <a href="{% url 'sa_project_list' team.id %}" class="btn btn-ghost">← Back</a>
-    </div>
-    <div class="card">
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label>Project Name</label>
-                <input type="text" name="name" required placeholder="e.g. Backend API"
-                       value="{{ form.name.value|default:'' }}">
-            </div>
-            <div class="form-group">
-                <label>Description <span style="color:#aaa;">(optional)</span></label>
-                <textarea name="description" rows="3"
-                          placeholder="What is this project about?">{{ form.description.value|default:'' }}</textarea>
-            </div>
-            <div class="actions">
-                <button type="submit" class="btn btn-primary">
-                    {% if editing %}Save Changes{% else %}Create Project{% endif %}
-                </button>
-                <a href="{% url 'sa_project_list' team.id %}" class="btn btn-ghost">Cancel</a>
-            </div>
-        </form>
-    </div>
+<div style="max-width:900px;margin:0 auto;">
+    <div class="page-header"><h1>Users</h1></div>
+    <table class="table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 2px solid var(--border);">
+                <th style="padding: 10px;">ID</th>
+                <th style="padding: 10px;">Username</th>
+                <th style="padding: 10px;">Email</th>
+                <th style="padding: 10px;">Platform Role</th>
+                <th style="padding: 10px;">Team · Role</th>
+                <th style="padding: 10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 10px;">{{ user.id }}</td>
+                <td style="padding: 10px;">{{ user.username }}</td>
+                <td style="padding: 10px;">{{ user.email }}</td>
+                <td style="padding: 10px;">{{ user.userprofile.role }}</td>
+                <td style="padding: 10px;">
+                    {% if user.userprofile.role == 'superadmin' %}
+                        —
+                    {% else %}
+                        {% with mem=user.membership_set.first %}
+                            {% if mem %}{{ mem.team.name }} · {{ mem.role }}
+                            {% else %}no team{% endif %}
+                        {% endwith %}
+                    {% endif %}
+                </td>
+                <td style="padding: 10px;">
+                    {% if user.id != request.user.id %}
+                        <a href="{% url 'sa_toggle_superadmin' user.id %}" class="btn btn-sm">
+                            {% if user.userprofile.role == 'superadmin' %}Remove SA{% else %}Make SA{% endif %}
+                        </a>
+                        <a href="{% url 'sa_delete_user' user.id %}" class="btn btn-sm btn-danger">Delete</a>
+                    {% else %}
+                        <span style="color: var(--text-3); font-size: 13px;">Current user</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

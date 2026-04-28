@@ -20,6 +20,10 @@
             </p>
             <div style="margin-top:1.5rem; display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap;">
                 <a href="{% url 'pending' %}" class="btn btn-ghost">Refresh status</a>
+                <form method="post" action="{% url 'cancel_request' join_request.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Cancel request</button>
+                </form>
                 <a href="{% url 'join_team' %}" class="btn btn-ghost">Try a different key</a>
             </div>
 

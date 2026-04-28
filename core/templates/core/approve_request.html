@@ -6,21 +6,33 @@
         <h1>Approve Request</h1>
         <p style="color:#888;font-size:14px;margin-top:.5rem;margin-bottom:1.5rem;">
             Approving <strong>{{ join_request.user.username }}</strong> into
-            <strong>{{ join_request.team.name }}</strong>. Assign their role:
+            <strong>{{ join_request.team.name }}</strong>.
+            {% if not superadmin %}
+                Assign their role:
+            {% endif %}
         </p>
-        <form method="post">
-            {% csrf_token %}
-            {% for field in form %}
-                <div class="form-group">
-                    <label>{{ field.label }}</label>
-                    {{ field }}
+
+        {% if superadmin %}
+            <form method="post" action="{% url 'sa_approve_request' team.id join_request.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Approve</button>
+                <a href="{% url 'sa_join_requests' team.id %}" class="btn btn-ghost">Cancel</a>
+            </form>
+        {% else %}
+            <form method="post" action="{% url 'approve_request' join_request.id %}">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-group">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                {% endfor %}
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary">Approve & Add</button>
+                    <a href="{% url 'join_requests' %}" class="btn btn-ghost">Cancel</a>
                 </div>
-            {% endfor %}
-            <div class="actions">
-                <button type="submit" class="btn btn-primary">Approve & Add</button>
-                <a href="{% url 'join_requests' %}" class="btn btn-ghost">Cancel</a>
-            </div>
-        </form>
+            </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
