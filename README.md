@@ -1,6 +1,4 @@
-README needs updating — session added a lot. Rewrite:
 
-```markdown
 # SecureVault
 
 A team-based secret management web application built with Django. Teams can securely store, share, and audit access to credentials and environment secrets — with role-based access control, envelope encryption, and a full audit trail.
@@ -79,5 +77,4 @@ secretmanager/
 │   └── templates/
 └── secretmanager/
     └── settings.py           # Loads VAULT_MASTER_KEY from .env
-```
 ```
