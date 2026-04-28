@@ -46,6 +46,7 @@ class UserProfile(models.Model):
 
 class Team(models.Model):
     name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, default='')
     encryption_key = models.TextField(default=generate_encryption_key)
     join_key = models.CharField(max_length=20, unique=True, default=generate_join_key)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -91,7 +92,7 @@ class Secret(models.Model):
 
 
 class SecretVersion(models.Model):
-    secret = models.ForeignKey(Secret, on_delete=models.CASCADE, related_name='versions')
+    secret = models.ForeignKey(Secret, on_delete=models.SET_NULL, null=True, blank=True, related_name='versions')
     encrypted_value = models.TextField()
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     changed_at = models.DateTimeField(auto_now_add=True)

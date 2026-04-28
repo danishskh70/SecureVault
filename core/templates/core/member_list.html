@@ -6,6 +6,9 @@
     <h1>{{ team.name }} — Members</h1>
     <div style="display:flex;gap:8px;">
         <a href="{% url 'project_list' %}" class="btn btn-ghost">← Projects</a>
+        {% if my_membership.role == 'owner' %}
+            <a href="{% url 'team_settings' %}" class="btn btn-ghost">Team Settings</a>
+        {% endif %}
         <a href="{% url 'join_requests' %}" class="btn btn-ghost">Join Requests</a>
     </div>
 </div>

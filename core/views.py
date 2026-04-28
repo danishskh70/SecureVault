@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
+import io
 
 from .models import (
     UserProfile, Team, Project, Secret,
@@ -12,7 +13,8 @@ from .models import (
 )
 from .forms import (
     SignupForm, CreateTeamForm, JoinTeamForm,
-    ProjectForm, SecretForm, ApproveRequestForm
+    ProjectForm, SecretForm, ApproveRequestForm,
+    TeamForm, TransferOwnershipForm
 )
 
 
@@ -176,6 +178,65 @@ def pending(request):
 # ─── Team Management ─────────────────────────────────────────────────────────
 
 @login_required
+def team_settings(request):
+    membership = get_membership(request.user)
+    if not membership or not has_role(membership, 'owner'):
+        return redirect('project_list')
+    
+    team = membership.team
+    if request.method == 'POST':
+        form = TeamForm(request.POST, instance=team)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Team "{team.name}" settings updated.')
+            return redirect('team_settings')
+    else:
+        form = TeamForm(instance=team)
+        
+    return render(request, 'core/team_settings.html', {
+        'team': team,
+        'form': form,
+        'membership': membership,
+    })
+
+
+@login_required
+def transfer_ownership(request):
+    membership = get_membership(request.user)
+    if not membership or not has_role(membership, 'owner'):
+        return redirect('project_list')
+    
+    team = membership.team
+    # Get other members who can become owners
+    other_memberships = Membership.objects.filter(team=team).exclude(user=request.user).select_related('user')
+    other_users = [m.user for m in other_memberships]
+    
+    if request.method == 'POST':
+        form = TransferOwnershipForm(request.POST, queryset=User.objects.filter(id__in=[u.id for u in other_users]))
+        if form.is_valid():
+            new_owner = form.cleaned_data['new_owner']
+            # Change current owner to admin
+            membership.role = 'admin'
+            membership.save()
+            
+            # Change new owner role to owner
+            new_membership = Membership.objects.get(team=team, user=new_owner)
+            new_membership.role = 'owner'
+            new_membership.save()
+            
+            messages.success(request, f'Ownership transferred to {new_owner.username}.')
+            return redirect('project_list')
+    else:
+        form = TransferOwnershipForm(queryset=User.objects.filter(id__in=[u.id for u in other_users]))
+        
+    return render(request, 'core/transfer_ownership.html', {
+        'team': team,
+        'form': form,
+        'membership': membership,
+    })
+
+
+@login_required
 def member_list(request):
     membership = get_membership(request.user)
 
@@ -268,59 +329,6 @@ def join_requests(request):
         'pending_request_count': requests_qs.count(),
     })
 
-@login_required
-def approve_request(request, request_id):
-    membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
-    if is_superadmin(request.user):
-        return redirect('superadmin_dashboard')
-    join_request = get_object_or_404(
-        TeamJoinRequest, id=request_id, team=membership.team, status='pending'
-    )
-    if request.method == 'POST':
-        form = ApproveRequestForm(request.POST)
-        if form.is_valid():
-            Membership.objects.create(
-                user=join_request.user,
-                team=join_request.team,
-                role=form.cleaned_data['role']
-            )
-            join_request.status = 'approved'
-            join_request.save()
-            return redirect('join_requests')
-    else:
-        form = ApproveRequestForm()
-    return render(request, 'core/approve_request.html', {
-        'join_request': join_request,
-        'form': form,
-    })
-@login_required
-def reject_request(request, request_id):
-    membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
-    if is_superadmin(request.user):
-        return redirect('superadmin_dashboard')
-    join_request = get_object_or_404(
-        TeamJoinRequest, id=request_id, team=membership.team, status='pending'
-    )
-    if request.method == 'POST':
-        join_request.status = 'rejected'
-        join_request.save()
-        return redirect('join_requests')
-    return render(request, 'core/confirm_reject.html', {
-        'join_request': join_request,
-    })
-
-@login_required
-def cancel_request(request, request_id):
-    join_request = get_object_or_404(TeamJoinRequest, id=request_id, user=request.user, status='pending')
-    if request.method == 'POST':
-        join_request.delete()
-        return redirect('create_team')
-    return redirect('pending')
-
 # ─── Projects ────────────────────────────────────────────────────────────────
 
 @login_required
@@ -361,6 +369,29 @@ def add_project(request):
         'is_superadmin': is_superadmin(request.user),
         'teams': Team.objects.all() if is_superadmin(request.user) else None,
         
+    })
+
+
+@login_required
+def edit_project(request, project_id):
+    if is_superadmin(request.user):
+        return redirect('superadmin_dashboard')
+    membership = get_membership(request.user)
+    if not membership or not has_role(membership, 'admin'):
+        return redirect('project_list')
+    project = get_object_or_404(Project, id=project_id, team=membership.team)
+    if request.method == 'POST':
+        form = ProjectForm(request.POST, instance=project)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Project "{project.name}" updated.')
+            return redirect('project_list')
+    else:
+        form = ProjectForm(instance=project)
+    return render(request, 'core/edit_project.html', {
+        'form': form,
+        'project': project,
+        'membership': membership,
     })
 
 
@@ -427,6 +458,7 @@ def add_secret(request, project_id):
                 secret=secret,
                 secret_name=secret.name
             )
+            messages.success(request, f'Secret "{secret.name}" created.')
             return redirect('secret_list', project_id=project.id)
     else:
         form = SecretForm()
@@ -506,6 +538,7 @@ def edit_secret(request, project_id, secret_id):
                 user=request.user, action='edited',
                 secret=updated, secret_name=updated.name
             )
+            messages.success(request, f'Secret "{updated.name}" updated.')
             return redirect('secret_list', project_id=project.id)
     else:
         form = SecretForm(instance=secret, initial={'value': secret.get_value()})
@@ -529,11 +562,21 @@ def delete_secret(request, project_id, secret_id):
         project = get_object_or_404(Project, id=project_id, team=membership.team)
     secret = get_object_or_404(Secret, id=secret_id, project=project)
     if request.method == 'POST':
+        last_version = secret.versions.count()
+        SecretVersion.objects.create(
+            secret=secret,
+            encrypted_value=secret.value,
+            changed_by=request.user,
+            version_number=last_version + 1,
+            action='deleted'
+        )
         AuditLog.objects.create(
             user=request.user, action='deleted',
             secret=secret, secret_name=secret.name
         )
+        secret_name = secret.name
         secret.delete()
+        messages.success(request, f'Secret "{secret_name}" deleted.')
         return redirect('secret_list', project_id=project.id)
     return render(request, 'core/confirm_delete.html', {
         'secret': secret,
@@ -865,7 +908,264 @@ def sa_delete_user(request, user_id):
 def switch_team(request, team_id):
     membership = get_object_or_404(Membership, user=request.user, team_id=team_id)
     profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={'role': 'user'})
-    profile.active_team = membership.team
+    profile.active_team_id = membership.team.pk
     profile.save()
     messages.success(request, f"Switched to team: {membership.team.name}")
     return redirect('project_list')
+
+
+def parse_import_file(file):
+    name = file.name.lower()
+    content = file.read().decode('utf-8', errors='ignore')
+    pairs = []
+
+    if name.endswith('.env'):
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if '=' in line:
+                key, _, val = line.partition('=')
+                pairs.append((key.strip(), val.strip()))
+
+    elif name.endswith('.csv'):
+        for line in content.splitlines():
+            parts = line.split(',', 1)
+            if len(parts) == 2:
+                key, val = parts
+                if key.strip() and key.strip().upper() != 'KEY':
+                    pairs.append((key.strip(), val.strip()))
+
+    elif name.endswith('.json'):
+        import json
+        try:
+            data = json.loads(content)
+            if isinstance(data, dict):
+                pairs = [(k, str(v)) for k, v in data.items()]
+        except json.JSONDecodeError:
+            pass
+
+    return pairs
+
+
+@login_required
+def bulk_import(request, project_id):
+    if is_superadmin(request.user):
+        project = get_object_or_404(Project, id=project_id)
+        membership = None
+    else:
+        membership = get_membership(request.user)
+        if not membership or not has_role(membership, 'developer'):
+            return redirect('project_list')
+        project = get_object_or_404(Project, id=project_id, team=membership.team)
+
+    if request.method == 'POST':
+        # CONFIRM stage — actually save
+        if 'confirm' in request.POST:
+            keys   = request.POST.getlist('keys')
+            values = request.POST.getlist('values')
+            skips  = request.POST.getlist('skip')
+
+            for key, val in zip(keys, values):
+                if key in skips:
+                    continue
+                existing = Secret.objects.filter(name=key, project=project).first()
+                if existing:
+                    # overwrite — save version first
+                    last_version = existing.versions.count()
+                    SecretVersion.objects.create(
+                        secret=existing,
+                        encrypted_value=existing.value,
+                        changed_by=request.user,
+                        version_number=last_version + 1,
+                        action='edited'
+                    )
+                    existing.set_value(val)
+                    existing.save()
+                    AuditLog.objects.create(
+                        user=request.user, action='edited',
+                        secret=existing, secret_name=existing.name
+                    )
+                else:
+                    s = Secret(name=key, project=project)
+                    s.set_value(val)
+                    s.save()
+                    SecretVersion.objects.create(
+                        secret=s,
+                        encrypted_value=s.value,
+                        changed_by=request.user,
+                        version_number=1,
+                        action='imported'
+                    )
+                    AuditLog.objects.create(
+                        user=request.user, action='created',
+                        secret=s, secret_name=s.name
+                    )
+            messages.success(request, 'Secrets imported successfully.')
+            return redirect('secret_list', project_id=project.id)
+
+        # PREVIEW stage — parse file
+        file = request.FILES.get('import_file')
+        if not file:
+            return render(request, 'core/bulk_import.html', {
+                'project': project,
+                'error': 'No file selected.',
+                'membership': membership,
+            })
+
+        ext = file.name.lower().split('.')[-1]
+        if ext not in ('env', 'csv', 'json'):
+            return render(request, 'core/bulk_import.html', {
+                'project': project,
+                'error': 'Unsupported file type. Use .env, .csv, or .json',
+                'membership': membership,
+            })
+
+        pairs = parse_import_file(file)
+        if not pairs:
+            return render(request, 'core/bulk_import.html', {
+                'project': project,
+                'error': 'No valid key=value pairs found in file.',
+                'membership': membership,
+            })
+
+        # mark duplicates
+        preview = []
+        for key, val in pairs:
+            exists = Secret.objects.filter(name=key, project=project).exists()
+            preview.append({'key': key, 'val': val, 'exists': exists})
+
+        return render(request, 'core/bulk_import.html', {
+            'project': project,
+            'preview': preview,
+            'membership': membership,
+        })
+
+    return render(request, 'core/bulk_import.html', {
+        'project': project,
+        'membership': membership,
+    })
+
+
+@login_required
+def secret_versions(request, project_id, secret_id):
+    if is_superadmin(request.user):
+        project = get_object_or_404(Project, id=project_id)
+        membership = None
+    else:
+        membership = get_membership(request.user)
+        if not membership:
+            return redirect('project_list')
+        project = get_object_or_404(Project, id=project_id, team=membership.team)
+    secret = get_object_or_404(Secret, id=secret_id, project=project)
+    versions = secret.versions.all().order_by('-version_number')
+    return render(request, 'core/secret_versions.html', {
+        'secret': secret,
+        'project': project,
+        'versions': versions,
+        'membership': membership,
+        'can_edit': can_access(request.user, membership, 'developer'),
+    })
+
+
+@login_required
+def rollback_secret(request, project_id, secret_id, version_id):
+    if is_superadmin(request.user):
+        project = get_object_or_404(Project, id=project_id)
+        membership = None
+    else:
+        membership = get_membership(request.user)
+        if not membership or not has_role(membership, 'developer'):
+            return redirect('project_list')
+        project = get_object_or_404(Project, id=project_id, team=membership.team)
+    secret = get_object_or_404(Secret, id=secret_id, project=project)
+    version = get_object_or_404(SecretVersion, id=version_id, secret=secret)
+
+    if request.method == 'POST':
+        # save current as version first
+        last_version = secret.versions.count()
+        SecretVersion.objects.create(
+            secret=secret,
+            encrypted_value=secret.value,
+            changed_by=request.user,
+            version_number=last_version + 1,
+            action='edited'
+        )
+        # restore old version value directly — already encrypted
+        secret.value = version.encrypted_value
+        secret.save()
+        AuditLog.objects.create(
+            user=request.user, action='edited',
+            secret=secret, secret_name=secret.name
+        )
+        messages.success(request, f'Restored v{version.version_number} of "{secret.name}".')
+        return redirect('secret_versions', project_id=project.id, secret_id=secret.id)
+
+    return render(request, 'core/confirm_rollback.html', {
+        'secret': secret,
+        'project': project,
+        'version': version,
+        'membership': membership,
+    })
+
+
+@login_required
+def cancel_request(request, request_id):
+    join_request = get_object_or_404(TeamJoinRequest, id=request_id, user=request.user, status='pending')
+    if request.method == 'POST':
+        join_request.delete()
+        messages.success(request, 'Join request cancelled.')
+        return redirect('create_team')
+    return redirect('pending')
+
+
+# ─── Approvals ───
+
+@login_required
+def approve_request(request, request_id):
+    membership = get_membership(request.user)
+    if not has_role(membership, 'admin') and not is_superadmin(request.user):
+        return redirect('project_list')
+    if is_superadmin(request.user):
+        return redirect('superadmin_dashboard')
+    join_request = get_object_or_404(
+        TeamJoinRequest, id=request_id, team=membership.team, status='pending'
+    )
+    if request.method == 'POST':
+        form = ApproveRequestForm(request.POST)
+        if form.is_valid():
+            Membership.objects.create(
+                user=join_request.user,
+                team=join_request.team,
+                role=form.cleaned_data['role']
+            )
+            join_request.status = 'approved'
+            join_request.save()
+            messages.success(request, f'{join_request.user.username} approved.')
+            return redirect('join_requests')
+    else:
+        form = ApproveRequestForm()
+    return render(request, 'core/approve_request.html', {
+        'join_request': join_request,
+        'form': form,
+    })
+
+
+@login_required
+def reject_request(request, request_id):
+    membership = get_membership(request.user)
+    if not has_role(membership, 'admin') and not is_superadmin(request.user):
+        return redirect('project_list')
+    if is_superadmin(request.user):
+        return redirect('superadmin_dashboard')
+    join_request = get_object_or_404(
+        TeamJoinRequest, id=request_id, team=membership.team, status='pending'
+    )
+    if request.method == 'POST':
+        join_request.status = 'rejected'
+        join_request.save()
+        messages.success(request, f'Request rejected.')
+        return redirect('join_requests')
+    return render(request, 'core/confirm_reject.html', {
+        'join_request': join_request,
+    })

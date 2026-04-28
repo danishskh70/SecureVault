@@ -83,6 +83,9 @@
                 </a>
                 {% if membership %}
                     {% if membership.role == 'owner' or membership.role == 'admin' %}
+                        <a href="{% url 'edit_project' project.id %}" class="btn btn-ghost btn-sm">
+                            Edit
+                        </a>
                         <a href="{% url 'delete_project' project.id %}" class="btn btn-ghost btn-sm"
                            style="color:var(--danger);border-color:transparent;"
                            onclick="return confirm('Delete project \'{{ project.name }}\'? All secrets will be lost.')">
@@ -90,6 +93,9 @@
                         </a>
                     {% endif %}
                 {% elif is_superadmin %}
+                    <a href="{% url 'edit_project' project.id %}" class="btn btn-ghost btn-sm">
+                        Edit
+                    </a>
                     <a href="{% url 'delete_project' project.id %}" class="btn btn-ghost btn-sm"
                        style="color:var(--danger);border-color:transparent;"
                        onclick="return confirm('Delete project \'{{ project.name }}\'?')">

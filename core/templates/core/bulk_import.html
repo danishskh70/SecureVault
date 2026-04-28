@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Import — {{ project.name }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto;">
+
+    <div class="page-header">
+        <div class="page-header-left">
+            <div class="page-title">Bulk Import — {{ project.name }}</div>
+            <div class="page-subtitle">Upload a .env, .csv, or .json file to import secrets.</div>
+        </div>
+        <a href="{% url 'secret_list' project.id %}" class="btn btn-ghost">← Back</a>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    {% if not preview %}
+    <!-- UPLOAD FORM -->
+    <div class="card">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>File (.env / .csv / .json)</label>
+                <input type="file" name="import_file" accept=".env,.csv,.json" required>
+            </div>
+            <div style="margin-top:.5rem;font-size:12px;color:var(--text-3);line-height:1.8;">
+                <strong>.env</strong> — KEY=VALUE per line<br>
+                <strong>.csv</strong> — KEY,VALUE per line (no header)<br>
+                <strong>.json</strong> — {"KEY": "VALUE"} flat object
+            </div>
+            <div style="margin-top:1.25rem;">
+                <button type="submit" class="btn btn-primary">Parse File →</button>
+            </div>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- PREVIEW + CONFIRM -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="1">
+
+        <div class="card" style="padding:0;overflow:hidden;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in preview %}
+                    <tr>
+                        <td style="font-family:monospace;font-size:12px;">
+                            <input type="hidden" name="keys" value="{{ item.key }}">
+                            {{ item.key }}
+                        </td>
+                        <td style="font-family:monospace;font-size:12px;color:var(--text-3);">
+                            <input type="hidden" name="values" value="{{ item.val }}">
+                            {{ item.val|truncatechars:40 }}
+                        </td>
+                        <td>
+                            {% if item.exists %}
+                            <span class="badge badge-admin">Duplicate</span>
+                            {% else %}
+                            <span class="badge badge-approved">New</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.exists %}
+                            <select name="skip" style="font-size:12px;padding:3px 6px;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:inherit;">
+                                <option value="">Overwrite</option>
+                                <option value="{{ item.key }}">Skip</option>
+                            </select>
+                            {% else %}
+                            <span style="font-size:12px;color:var(--text-3);">Import</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:flex;gap:.5rem;margin-top:1rem;">
+            <button type="submit" class="btn btn-primary">Confirm Import</button>
+            <a href="{% url 'bulk_import' project.id %}" class="btn btn-ghost">Start Over</a>
+        </div>
+    </form>
+    {% endif %}
+
+</div>
+{% endblock %}

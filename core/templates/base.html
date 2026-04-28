@@ -640,27 +640,46 @@
 
     <div class="container">
     {% if messages %}
-    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px;">
-        {% for message in messages %}
-        <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" 
-             style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-width: 280px; margin-bottom: 0; cursor: pointer;"
-             onclick="this.style.display='none'">
-            {{ message }}
-        </div>
-        {% endfor %}
+<div id="toast-container" style="position:fixed;top:64px;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:.5rem;">
+    {% for message in messages %}
+    <div class="toast toast-{{ message.tags }}" style="
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-radius:var(--radius);
+        padding:10px 16px;
+        font-size:13px;
+        min-width:220px;
+        box-shadow:0 4px 12px rgba(0,0,0,.08);
+        display:flex;
+        align-items:center;
+        gap:8px;
+        animation:slideIn .2s ease;
+        {% if message.tags == 'success' %}border-left:3px solid #10b981;{% endif %}
+        {% if message.tags == 'error' %}border-left:3px solid var(--danger);{% endif %}
+        {% if message.tags == 'warning' %}border-left:3px solid #f59e0b;{% endif %}
+        {% if message.tags == 'info' %}border-left:3px solid #3b82f6;{% endif %}
+    ">
+        {% if message.tags == 'success' %}✓{% endif %}
+        {% if message.tags == 'error' %}✕{% endif %}
+        {% if message.tags == 'warning' %}⚠{% endif %}
+        {% if message.tags == 'info' %}ℹ{% endif %}
+        {{ message }}
     </div>
-    <script>
-        setTimeout(() => {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(a => {
-                a.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                a.style.opacity = '0';
-                a.style.transform = 'translateX(20px)';
-                setTimeout(() => a.remove(), 500);
-            });
-        }, 4000);
-    </script>
-    {% endif %}
+    {% endfor %}
+</div>
+<style>
+@keyframes slideIn {
+    from { opacity:0; transform:translateX(20px); }
+    to   { opacity:1; transform:translateX(0); }
+}
+</style>
+<script>
+setTimeout(() => {
+    const c = document.getElementById('toast-container');
+    if(c) c.style.display = 'none';
+}, 3000);
+</script>
+{% endif %}
     {% block content %}{% endblock %}
 </div>
 </body>

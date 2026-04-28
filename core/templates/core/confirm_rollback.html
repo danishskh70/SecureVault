@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Confirm Rollback — SecureVault{% endblock %}
+{% block content %}
+<div style="max-width:440px;margin:5rem auto;text-align:center;">
+    <h1 style="margin-bottom:8px;">Restore v{{ version.version_number }}?</h1>
+    <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:1.5rem;">
+        Current value of <strong>{{ secret.name }}</strong> will be saved as a new version before restoring.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:.5rem;justify-content:center;">
+            <button type="submit" class="btn btn-primary">Restore v{{ version.version_number }}</button>
+            <a href="{% url 'secret_versions' project.id secret.id %}" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

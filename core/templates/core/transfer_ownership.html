@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Transfer Ownership — {{ team.name }}{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:2rem auto;">
+    <div class="page-header">
+        <div class="page-header-left">
+            <div class="page-title">Transfer Ownership</div>
+            <div class="page-subtitle">Select a new owner for {{ team.name }}</div>
+        </div>
+        <a href="{% url 'team_settings' %}" class="btn btn-ghost">← Cancel</a>
+    </div>
+
+    <div class="card">
+        <div style="background:rgba(245,158,11,.1);border:1px solid #f59e0b;padding:1rem;border-radius:var(--radius);margin-bottom:1.5rem;color:#92400e;font-size:13px;line-height:1.5;">
+            <strong>Warning:</strong> You are about to transfer ownership of this team. You will become an <strong>Admin</strong> and will no longer have full owner privileges. This action cannot be undone.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>New Owner</label>
+                {{ form.new_owner }}
+                {% if form.new_owner.errors %}
+                <div style="color:var(--danger);font-size:12px;margin-top:4px;">{{ form.new_owner.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-top:2rem;">
+                <button type="submit" class="btn btn-danger" style="width:100%;" onclick="return confirm('Are you absolutely sure you want to transfer ownership?')">
+                    Transfer Ownership
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

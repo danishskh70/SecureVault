@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Edit Project — {{ project.name }}{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto;">
+    <div class="page-header">
+        <div class="page-header-left">
+            <div class="page-title">Edit Project</div>
+            <div class="page-subtitle">{{ project.name }}</div>
+        </div>
+        <a href="{% url 'project_list' %}" class="btn btn-ghost">← Back</a>
+    </div>
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+            <div style="display:flex;gap:.5rem;margin-top:1rem;">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{% url 'project_list' %}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

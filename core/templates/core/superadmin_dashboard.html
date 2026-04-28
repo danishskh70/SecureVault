@@ -26,28 +26,30 @@
  
 <!-- Stat cards -->
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:2rem;">
- 
+
     <div class="stat-card" style="cursor:default;">
         <div class="stat-value">{{ teams.count }}</div>
         <div class="stat-label">Teams</div>
     </div>
- 
+
     <a href="{% url 'sa_user_list' %}" class="stat-card">
         <div class="stat-value">{{ users.count }}</div>
         <div class="stat-label">Users</div>
         <div class="stat-link-hint">View all →</div>
     </a>
- 
-    <div class="stat-card" style="cursor:default;">
+
+    <a href="{% url 'project_list' %}" class="stat-card">
         <div class="stat-value">{{ projects.count }}</div>
         <div class="stat-label">Projects</div>
-    </div>
- 
-    <div class="stat-card" style="cursor:default;">
+        <div class="stat-link-hint">View all →</div>
+    </a>
+
+    <a href="{% url 'audit_log' %}" class="stat-card">
         <div class="stat-value">{{ secrets.count }}</div>
         <div class="stat-label">Secrets</div>
-    </div>
- 
+        <div class="stat-link-hint">View audit →</div>
+    </a>
+
 </div>
  
 <!-- Teams section -->

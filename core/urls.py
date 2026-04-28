@@ -32,6 +32,8 @@ urlpatterns = [
     path('team/pending/', views.pending, name='pending'),
 
     # Team management (owner/admin only)
+    path('team/settings/', views.team_settings, name='team_settings'),
+    path('team/settings/transfer/', views.transfer_ownership, name='transfer_ownership'),
     path('team/members/', views.member_list, name='member_list'),
     path('team/members/<int:membership_id>/role/', views.change_role, name='change_role'),
     path('team/members/<int:membership_id>/remove/', views.remove_member, name='remove_member'),
@@ -45,6 +47,7 @@ urlpatterns = [
     # Projects
     path('projects/', views.project_list, name='project_list'),
     path('projects/add/', views.add_project, name='add_project'),
+    path('projects/<int:project_id>/edit/', views.edit_project, name='edit_project'),
     path('projects/<int:project_id>/delete/', views.delete_project, name='delete_project'),
 
     # Secrets
@@ -53,12 +56,16 @@ urlpatterns = [
     path('projects/<int:project_id>/secrets/<int:secret_id>/', views.secret_detail, name='secret_detail'),
     path('projects/<int:project_id>/secrets/<int:secret_id>/edit/', views.edit_secret, name='edit_secret'),
     path('projects/<int:project_id>/secrets/<int:secret_id>/delete/', views.delete_secret, name='delete_secret'),
+    path('projects/<int:project_id>/secrets/<int:secret_id>/versions/', views.secret_versions, name='secret_versions'),
+    path('projects/<int:project_id>/secrets/<int:secret_id>/versions/<int:version_id>/rollback/', views.rollback_secret, name='rollback_secret'),
 
     # Audit log
     path('audit/', views.audit_log, name='audit_log'),
 
     # Team switching
     path('team/switch/<int:team_id>/', views.switch_team, name='switch_team'),
+
+    path('projects/<int:project_id>/secrets/import/', views.bulk_import, name='bulk_import'),
 
     # Superadmin
     path('superadmin/', views.superadmin_dashboard, name='superadmin_dashboard'),
