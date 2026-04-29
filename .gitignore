@@ -12,6 +12,7 @@ db.sqlite3
 *.sqlite3
 .env
 local_settings.py
+migrations
 
 # VS Code
 .vscode/

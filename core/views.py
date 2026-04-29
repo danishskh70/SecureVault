@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
 import io
+import csv
 
 from .models import (
     UserProfile, Team, Project, Secret,
@@ -16,6 +17,7 @@ from .forms import (
     ProjectForm, SecretForm, ApproveRequestForm,
     TeamForm, TransferOwnershipForm
 )
+from .decorators import require_role
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -24,6 +26,8 @@ def get_profile(user):
     return UserProfile.objects.filter(user=user).first()
 
 def is_superadmin(user):
+    if user.is_superuser:
+        return True
     p = get_profile(user)
     return p and p.role == 'superadmin'
 
@@ -178,11 +182,9 @@ def pending(request):
 # ─── Team Management ─────────────────────────────────────────────────────────
 
 @login_required
+@require_role('owner')
 def team_settings(request):
     membership = get_membership(request.user)
-    if not membership or not has_role(membership, 'owner'):
-        return redirect('project_list')
-    
     team = membership.team
     if request.method == 'POST':
         form = TeamForm(request.POST, instance=team)
@@ -201,11 +203,9 @@ def team_settings(request):
 
 
 @login_required
+@require_role('owner')
 def transfer_ownership(request):
     membership = get_membership(request.user)
-    if not membership or not has_role(membership, 'owner'):
-        return redirect('project_list')
-    
     team = membership.team
     # Get other members who can become owners
     other_memberships = Membership.objects.filter(team=team).exclude(user=request.user).select_related('user')
@@ -237,6 +237,7 @@ def transfer_ownership(request):
 
 
 @login_required
+@require_role('admin')
 def member_list(request):
     membership = get_membership(request.user)
 
@@ -245,15 +246,7 @@ def member_list(request):
         # superadmin must specify team (you don't have it here)
         return redirect('superadmin_dashboard')  # or handle differently
 
-    # ❌ NO MEMBERSHIP
-    if not membership:
-        return redirect('create_team')
-
-    # ❌ NOT ADMIN
-    if not has_role(membership, 'admin'):
-        return redirect('project_list')
-
-    # ✅ SAFE TO USE membership.team
+    # ✅ SAFE TO USE membership.team (decorator ensures membership exists and role >= admin)
     team = membership.team
 
     members = Membership.objects.filter(
@@ -274,10 +267,9 @@ def member_list(request):
     })
 
 @login_required
+@require_role('admin')
 def change_role(request, membership_id):
     membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
     target = get_object_or_404(Membership, id=membership_id, team=membership.team)
@@ -295,10 +287,9 @@ def change_role(request, membership_id):
     })
 
 @login_required
+@require_role('admin')
 def remove_member(request, membership_id):
     membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
     target = get_object_or_404(Membership, id=membership_id, team=membership.team)
@@ -315,10 +306,9 @@ def remove_member(request, membership_id):
 # ─── Join Requests ───────────────────────────────────────────────────────────
 
 @login_required
+@require_role('admin')
 def join_requests(request):
     membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
     requests_qs = TeamJoinRequest.objects.filter(
@@ -345,10 +335,9 @@ def project_list(request):
 
 
 @login_required
+@require_role('admin')
 def add_project(request):
     membership = get_membership(request.user)
-    if not can_access(request.user, membership, 'admin'):
-        return redirect('project_list')
     if request.method == 'POST':
         form = ProjectForm(request.POST)
         if form.is_valid():
@@ -373,12 +362,11 @@ def add_project(request):
 
 
 @login_required
+@require_role('admin')
 def edit_project(request, project_id):
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
     membership = get_membership(request.user)
-    if not membership or not has_role(membership, 'admin'):
-        return redirect('project_list')
     project = get_object_or_404(Project, id=project_id, team=membership.team)
     if request.method == 'POST':
         form = ProjectForm(request.POST, instance=project)
@@ -396,13 +384,12 @@ def edit_project(request, project_id):
 
 
 @login_required
+@require_role('admin')
 def delete_project(request, project_id):
     membership = get_membership(request.user)
     if is_superadmin(request.user):
         project = get_object_or_404(Project, id=project_id)
     else:
-        if not has_role(membership, 'admin'):
-            return redirect('project_list')
         project = get_object_or_404(Project, id=project_id, team=membership.team)
     if request.method == 'POST':
         team_id = project.team.id
@@ -436,14 +423,13 @@ def secret_list(request, project_id):
 
 
 @login_required
+@require_role('developer')
 def add_secret(request, project_id):
     if is_superadmin(request.user):
         project = get_object_or_404(Project, id=project_id)
         membership = None
     else:
         membership = get_membership(request.user)
-        if not membership or not has_role(membership, 'developer'):
-            return redirect('project_list')
         project = get_object_or_404(Project, id=project_id, team=membership.team)
     if request.method == 'POST':
         form = SecretForm(request.POST)
@@ -509,25 +495,37 @@ def secret_detail(request, project_id, secret_id):
 
 
 @login_required
+@require_role('developer')
 def edit_secret(request, project_id, secret_id):
     if is_superadmin(request.user):
         project = get_object_or_404(Project, id=project_id)
         membership = None
     else:
         membership = get_membership(request.user)
-        if not membership or not has_role(membership, 'developer'):
-            return redirect('project_list')
         project = get_object_or_404(Project, id=project_id, team=membership.team)
     secret = get_object_or_404(Secret, id=secret_id, project=project)
     if request.method == 'POST':
         form = SecretForm(request.POST, instance=secret)
         if form.is_valid():
+            new_value = form.cleaned_data['value']
+            
+            # compare against current decrypted value
+            if new_value == secret.get_value():
+                form.add_error('value', 'New value must differ from current value.')
+                return render(request, 'core/add_secret.html', {
+                    'form': form,
+                    'project': project,
+                    'editing': True,
+                })
+
             updated = form.save(commit=False)
             # save old value as version before overwriting
-            last_version = updated.versions.count()
+            # we fetch fresh from DB because updated.value now contains form's plaintext
+            db_secret = Secret.objects.get(pk=updated.pk)
+            last_version = db_secret.versions.count()
             SecretVersion.objects.create(
                 secret=updated,
-                encrypted_value=updated.value,
+                encrypted_value=db_secret.value,
                 changed_by=request.user,
                 version_number=last_version + 1,
                 action='edited'
@@ -551,14 +549,13 @@ def edit_secret(request, project_id, secret_id):
 
 
 @login_required
+@require_role('developer')
 def delete_secret(request, project_id, secret_id):
     if is_superadmin(request.user):
         project = get_object_or_404(Project, id=project_id)
         membership = None
     else:
         membership = get_membership(request.user)
-        if not membership or not has_role(membership, 'developer'):
-            return redirect('project_list')
         project = get_object_or_404(Project, id=project_id, team=membership.team)
     secret = get_object_or_404(Secret, id=secret_id, project=project)
     if request.method == 'POST':
@@ -929,10 +926,12 @@ def parse_import_file(file):
                 pairs.append((key.strip(), val.strip()))
 
     elif name.endswith('.csv'):
-        for line in content.splitlines():
-            parts = line.split(',', 1)
-            if len(parts) == 2:
-                key, val = parts
+        # Use csv module to handle commas within values
+        f = io.StringIO(content)
+        reader = csv.reader(f)
+        for row in reader:
+            if len(row) >= 2:
+                key, val = row[0], row[1]
                 if key.strip() and key.strip().upper() != 'KEY':
                     pairs.append((key.strip(), val.strip()))
 
@@ -1069,37 +1068,47 @@ def secret_versions(request, project_id, secret_id):
 
 
 @login_required
+@require_role('developer')
 def rollback_secret(request, project_id, secret_id, version_id):
     if is_superadmin(request.user):
         project = get_object_or_404(Project, id=project_id)
         membership = None
     else:
         membership = get_membership(request.user)
-        if not membership or not has_role(membership, 'developer'):
-            return redirect('project_list')
         project = get_object_or_404(Project, id=project_id, team=membership.team)
     secret = get_object_or_404(Secret, id=secret_id, project=project)
     version = get_object_or_404(SecretVersion, id=version_id, secret=secret)
 
     if request.method == 'POST':
-        # save current as version first
-        last_version = secret.versions.count()
-        SecretVersion.objects.create(
-            secret=secret,
-            encrypted_value=secret.value,
-            changed_by=request.user,
-            version_number=last_version + 1,
-            action='edited'
-        )
-        # restore old version value directly — already encrypted
-        secret.value = version.encrypted_value
-        secret.save()
-        AuditLog.objects.create(
-            user=request.user, action='edited',
-            secret=secret, secret_name=secret.name
-        )
-        messages.success(request, f'Restored v{version.version_number} of "{secret.name}".')
-        return redirect('secret_versions', project_id=project.id, secret_id=secret.id)
+        try:
+            # save current as version first
+            last_version = secret.versions.count()
+            SecretVersion.objects.create(
+                secret=secret,
+                encrypted_value=secret.value,
+                changed_by=request.user,
+                version_number=last_version + 1,
+                action='edited'
+            )
+            # restore old version value directly — already encrypted
+            secret.value = version.encrypted_value
+            secret.save()
+            AuditLog.objects.create(
+                user=request.user, action='edited',
+                secret=secret, secret_name=secret.name
+            )
+            messages.success(request, f'Restored v{version.version_number} of "{secret.name}".')
+            return redirect('secret_versions', project_id=project.id, secret_id=secret.id)
+        except Exception as e:
+            import traceback
+            return render(request, 'core/confirm_rollback.html', {
+                'secret': secret,
+                'project': project,
+                'version': version,
+                'membership': membership,
+                'debug_error': str(e),
+                'debug_trace': traceback.format_exc(),
+            })
 
     return render(request, 'core/confirm_rollback.html', {
         'secret': secret,
@@ -1107,6 +1116,28 @@ def rollback_secret(request, project_id, secret_id, version_id):
         'version': version,
         'membership': membership,
     })
+
+
+@login_required
+@require_role('developer')
+def delete_secret_version(request, project_id, secret_id, version_id):
+    if is_superadmin(request.user):
+        project = get_object_or_404(Project, id=project_id)
+        membership = None
+    else:
+        membership = get_membership(request.user)
+        project = get_object_or_404(Project, id=project_id, team=membership.team)
+    
+    secret = get_object_or_404(Secret, id=secret_id, project=project)
+    version = get_object_or_404(SecretVersion, id=version_id, secret=secret)
+    
+    if request.method == 'POST':
+        version_num = version.version_number
+        version.delete()
+        messages.success(request, f'Version v{version_num} deleted.')
+        return redirect('secret_versions', project_id=project.id, secret_id=secret.id)
+    
+    return redirect('secret_versions', project_id=project.id, secret_id=secret.id)
 
 
 @login_required
@@ -1122,10 +1153,9 @@ def cancel_request(request, request_id):
 # ─── Approvals ───
 
 @login_required
+@require_role('admin')
 def approve_request(request, request_id):
     membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
     join_request = get_object_or_404(
@@ -1152,10 +1182,9 @@ def approve_request(request, request_id):
 
 
 @login_required
+@require_role('admin')
 def reject_request(request, request_id):
     membership = get_membership(request.user)
-    if not has_role(membership, 'admin') and not is_superadmin(request.user):
-        return redirect('project_list')
     if is_superadmin(request.user):
         return redirect('superadmin_dashboard')
     join_request = get_object_or_404(

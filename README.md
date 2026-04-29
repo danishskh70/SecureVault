@@ -37,7 +37,10 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```env
+SECRET_KEY=your-django-secret-key-here
 VAULT_MASTER_KEY=your-random-64-char-string-here
+ALLOWED_HOSTS=127.0.0.1,localhost,your-domain.com
+SECURE_SSL_REDIRECT=False  # Set to True in production with HTTPS
 ```
 
 > ⚠️ Never commit `.env`. This key is required to decrypt secrets — without it, the database is unreadable.

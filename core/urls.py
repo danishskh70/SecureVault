@@ -58,6 +58,7 @@ urlpatterns = [
     path('projects/<int:project_id>/secrets/<int:secret_id>/delete/', views.delete_secret, name='delete_secret'),
     path('projects/<int:project_id>/secrets/<int:secret_id>/versions/', views.secret_versions, name='secret_versions'),
     path('projects/<int:project_id>/secrets/<int:secret_id>/versions/<int:version_id>/rollback/', views.rollback_secret, name='rollback_secret'),
+    path('projects/<int:project_id>/secrets/<int:secret_id>/versions/<int:version_id>/delete/', views.delete_secret_version, name='delete_secret_version'),
 
     # Audit log
     path('audit/', views.audit_log, name='audit_log'),

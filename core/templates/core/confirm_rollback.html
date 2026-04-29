@@ -6,6 +6,15 @@
     <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:1.5rem;">
         Current value of <strong>{{ secret.name }}</strong> will be saved as a new version before restoring.
     </p>
+
+    {% if debug_error %}
+    <div style="background:#fee2e2; border:1px solid #ef4444; color:#b91c1c; padding:1rem; border-radius:8px; margin-bottom:1.5rem; text-align:left; font-family:monospace; font-size:12px; overflow-x:auto;">
+        <strong>Error:</strong> {{ debug_error }}<br><br>
+        <strong>Traceback:</strong><br>
+        <pre>{{ debug_trace }}</pre>
+    </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
         <div style="display:flex;gap:.5rem;justify-content:center;">

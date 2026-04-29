@@ -84,8 +84,11 @@ class Secret(models.Model):
         self.value = f.encrypt(raw_value.encode()).decode()
 
     def get_value(self):
-        f = self._get_fernet()
-        return f.decrypt(self.value.encode()).decode()
+        try:
+            f = self._get_fernet()
+            return f.decrypt(self.value.encode()).decode()
+        except Exception:
+            return "[DECRYPTION ERROR: Possible Key Mismatch]"
 
     def __str__(self):
         return f"{self.name} ({self.project.name})"
@@ -103,7 +106,12 @@ class SecretVersion(models.Model):
         ordering = ['-version_number']
 
     def get_value(self):
-        return self.secret._get_fernet().decrypt(self.encrypted_value.encode()).decode()
+        try:
+            if not self.secret:
+                return "[ERROR: Secret object deleted]"
+            return self.secret._get_fernet().decrypt(self.encrypted_value.encode()).decode()
+        except Exception:
+            return "[DECRYPTION ERROR]"
 
 
 class Membership(models.Model):

@@ -1,27 +1,17 @@
 from pathlib import Path
-
 import os
-from pathlib import Path
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Manual .env loading
-env_path = BASE_DIR / '.env'
-if env_path.exists():
-    with open(env_path) as f:
-        for line in f:
-            if '=' in line:
-                key, value = line.strip().split('=', 1)
-                os.environ[key] = value
-
-SECRET_KEY = 'django-insecure-y*hlfnycq0*27jicv6l=@k2*=0+(o4p+v=h_u$8#zitu3bfo3='
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-y*hlfnycq0*27jicv6l=@k2*=0+(o4p+v=h_u$8#zitu3bfo3=')
 
 # Key used for envelope encryption of team secrets
-VAULT_MASTER_KEY = os.environ.get('VAULT_MASTER_KEY', 'dev-fallback-only-change-in-production-1234567890123456')
+VAULT_MASTER_KEY = config('VAULT_MASTER_KEY', default='dev-fallback-only-change-in-production-1234567890123456')
 
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
